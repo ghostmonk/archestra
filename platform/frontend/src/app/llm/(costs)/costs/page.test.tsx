@@ -11,6 +11,7 @@ const mockUseTeamStatistics = vi.fn();
 const mockUseProfileStatistics = vi.fn();
 const mockUseModelStatistics = vi.fn();
 const mockUseCostSavingsStatistics = vi.fn();
+const mockUseCostHealth = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockRouterPush }),
@@ -30,6 +31,7 @@ vi.mock("@/lib/statistics.query", () => ({
     mockUseModelStatistics(params),
   useCostSavingsStatistics: (params: { timeframe: StatisticsTimeFrame }) =>
     mockUseCostSavingsStatistics(params),
+  useCostHealth: () => mockUseCostHealth(),
 }));
 
 vi.mock("recharts", () => ({
@@ -66,6 +68,11 @@ describe("StatisticsPage", () => {
     mockUseModelStatistics.mockReturnValue({ data: [] });
     mockUseCostSavingsStatistics.mockReturnValue({
       data: { timeSeries: [] },
+    });
+    mockUseCostHealth.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
     });
   });
 
@@ -165,5 +172,47 @@ describe("StatisticsPage", () => {
       expect(tablePanel.className).toContain("max-h-[280px]");
       expect(tablePanel.className).toContain("overflow-auto");
     }
+  });
+
+  it("renders the cost health meter when the health query returns data", () => {
+    mockUseCostHealth.mockReturnValue({
+      data: {
+        score: 75,
+        dimensions: {
+          limits: {
+            score: 100,
+            severity: "low",
+            message: "Spending limits configured",
+            link: "/llm/limits",
+          },
+          optimizationRules: {
+            score: 50,
+            severity: "moderate",
+            message: "Rules exist but none enabled",
+            link: "/llm/optimization-rules",
+          },
+          compression: {
+            score: 100,
+            severity: "low",
+            message: "TOON enabled",
+            link: "/settings/llm",
+          },
+          toolHygiene: {
+            score: 100,
+            severity: "low",
+            message: "No agent exceeds tool threshold",
+            link: "/agents",
+          },
+        },
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    const { getByText } = render(<StatisticsPage />);
+
+    expect(getByText("Cost Health")).toBeInTheDocument();
+    expect(getByText("75")).toBeInTheDocument();
+    expect(getByText("Fair")).toBeInTheDocument();
   });
 });
