@@ -7,16 +7,18 @@ export function CostsNavIndicator() {
 
   if (!data) return null;
 
-  const hasAlert =
-    data.score < 50 ||
-    Object.values(data.dimensions).some((d) => d.severity === "high");
+  if (data.score >= 80) return null;
 
-  if (!hasAlert) return null;
+  const isHigh = data.score < 50;
 
   return (
     <span
-      aria-label="Cost health needs attention"
-      className="ml-auto inline-flex h-2 w-2 shrink-0 rounded-full bg-red-500"
+      aria-label={
+        isHigh ? "Cost health needs attention" : "Cost health could improve"
+      }
+      className={`ml-auto inline-flex h-2 w-2 shrink-0 rounded-full ${
+        isHigh ? "bg-red-500" : "bg-yellow-500"
+      }`}
     />
   );
 }

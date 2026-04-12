@@ -14,6 +14,20 @@ function dim(severity: Severity) {
   return { score: 0, severity, message: "", link: "/" };
 }
 
+function mockHealth(score: number) {
+  mockUseCostHealth.mockReturnValue({
+    data: {
+      score,
+      dimensions: {
+        limits: dim("low"),
+        optimizationRules: dim("low"),
+        compression: dim("low"),
+        toolHygiene: dim("low"),
+      },
+    },
+  });
+}
+
 describe("CostsNavIndicator", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -25,51 +39,25 @@ describe("CostsNavIndicator", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders nothing when overall score is >= 50 and no dimension is high", () => {
-    mockUseCostHealth.mockReturnValue({
-      data: {
-        score: 75,
-        dimensions: {
-          limits: dim("low"),
-          optimizationRules: dim("moderate"),
-          compression: dim("low"),
-          toolHygiene: dim("low"),
-        },
-      },
-    });
+  it("renders nothing when overall score is healthy (>= 80)", () => {
+    mockHealth(85);
     const { container } = render(<CostsNavIndicator />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders the dot when overall score is below 50 even with no high dimensions", () => {
-    mockUseCostHealth.mockReturnValue({
-      data: {
-        score: 40,
-        dimensions: {
-          limits: dim("moderate"),
-          optimizationRules: dim("moderate"),
-          compression: dim("moderate"),
-          toolHygiene: dim("moderate"),
-        },
-      },
-    });
+  it("renders a yellow dot when overall score is fair (50-79)", () => {
+    mockHealth(60);
     const { getByLabelText } = render(<CostsNavIndicator />);
-    expect(getByLabelText("Cost health needs attention")).toBeInTheDocument();
+    const dot = getByLabelText("Cost health could improve");
+    expect(dot).toBeInTheDocument();
+    expect(dot.className).toContain("bg-yellow-500");
   });
 
-  it("renders the dot when any dimension has high severity", () => {
-    mockUseCostHealth.mockReturnValue({
-      data: {
-        score: 30,
-        dimensions: {
-          limits: dim("high"),
-          optimizationRules: dim("low"),
-          compression: dim("low"),
-          toolHygiene: dim("low"),
-        },
-      },
-    });
+  it("renders a red dot when overall score needs attention (< 50)", () => {
+    mockHealth(30);
     const { getByLabelText } = render(<CostsNavIndicator />);
-    expect(getByLabelText("Cost health needs attention")).toBeInTheDocument();
+    const dot = getByLabelText("Cost health needs attention");
+    expect(dot).toBeInTheDocument();
+    expect(dot.className).toContain("bg-red-500");
   });
 });
