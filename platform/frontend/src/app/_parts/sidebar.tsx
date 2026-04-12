@@ -47,6 +47,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsAuthenticated } from "@/lib/auth/auth.hook";
+import { CostsNavIndicator } from "@/components/costs-nav-indicator";
 import { useHasPermissions, usePermissionMap } from "@/lib/auth/auth.query";
 import config from "@/lib/config/config";
 import { useEnterpriseFeature } from "@/lib/config/config.query";
@@ -257,6 +258,7 @@ const NavPrimary = ({
                     }}
                   >
                     <span>{sub.title}</span>
+                    {sub.url === "/llm/costs" && <CostsNavIndicator />}
                   </Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
