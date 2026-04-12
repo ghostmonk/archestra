@@ -1,9 +1,15 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useCostHealth } from "@/lib/statistics.query";
@@ -43,8 +49,31 @@ function overallSeverity(score: number): Severity {
   return "high";
 }
 
+function countSummary(severities: Severity[]): string {
+  const counts = { high: 0, moderate: 0, low: 0 };
+  for (const s of severities) counts[s]++;
+  const parts: string[] = [];
+  if (counts.high) parts.push(`${counts.high} ${counts.high === 1 ? "alert" : "alerts"}`);
+  if (counts.moderate) parts.push(`${counts.moderate} attention`);
+  if (counts.low) parts.push(`${counts.low} healthy`);
+  return parts.join(", ");
+}
+
+const STORAGE_KEY = "archestra.cost-health-meter.open";
+
 export function CostHealthMeter() {
   const { data, isLoading, isError } = useCostHealth();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored !== null) setOpen(stored === "true");
+  }, []);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    localStorage.setItem(STORAGE_KEY, String(next));
+  };
 
   if (isError) return null;
 
@@ -54,55 +83,75 @@ export function CostHealthMeter() {
         <CardHeader>
           <Skeleton className="h-6 w-40" />
         </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
       </Card>
     );
   }
 
   const { score, dimensions } = data;
+  const dimensionKeys = Object.keys(DIMENSION_LABELS) as DimensionKey[];
+  const summary = countSummary(
+    dimensionKeys.map((k) => dimensions[k].severity as Severity),
+  );
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle>Cost Health</CardTitle>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl font-semibold tabular-nums">{score}</span>
-          <Badge className={cn(SEVERITY_BADGE[overallSeverity(score)])}>
-            {overallLabel(score)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {(Object.keys(DIMENSION_LABELS) as DimensionKey[]).map((key) => {
-          const d = dimensions[key];
-          const severity = d.severity as Severity;
-          return (
-            <Link
-              key={key}
-              href={d.link}
-              className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="font-medium shrink-0">
-                  {DIMENSION_LABELS[key]}
-                </span>
-                <Badge className={cn(SEVERITY_BADGE[severity])}>
-                  {SEVERITY_LABEL[severity]}
-                </Badge>
-                <span className="text-sm text-muted-foreground truncate">
-                  {d.message}
-                </span>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            </Link>
-          );
-        })}
-      </CardContent>
+      <Collapsible open={open} onOpenChange={handleOpenChange}>
+        <CollapsibleTrigger
+          aria-label={open ? "Collapse cost health details" : "Expand cost health details"}
+          className="w-full"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <CardTitle>Cost Health</CardTitle>
+              <span className="text-sm text-muted-foreground truncate">
+                {summary}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-semibold tabular-nums">
+                {score}
+              </span>
+              <Badge className={cn(SEVERITY_BADGE[overallSeverity(score)])}>
+                {overallLabel(score)}
+              </Badge>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform",
+                  open && "rotate-180",
+                )}
+              />
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="space-y-2">
+            {dimensionKeys.map((key) => {
+              const d = dimensions[key];
+              const severity = d.severity as Severity;
+              return (
+                <Link
+                  key={key}
+                  href={d.link}
+                  className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="font-medium shrink-0">
+                      {DIMENSION_LABELS[key]}
+                    </span>
+                    <Badge className={cn(SEVERITY_BADGE[severity])}>
+                      {SEVERITY_LABEL[severity]}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground truncate">
+                      {d.message}
+                    </span>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </Link>
+              );
+            })}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 }

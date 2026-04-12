@@ -1,6 +1,13 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CostHealthMeter } from "./cost-health-meter";
+
+async function expand() {
+  await userEvent.click(
+    screen.getByRole("button", { name: /Expand cost health details/ }),
+  );
+}
 
 const mockUseCostHealth = vi.fn();
 
@@ -41,6 +48,7 @@ function makeHealthData(score: number, dimensions?: Record<string, Dimension>) {
 describe("CostHealthMeter", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   it("renders nothing when the query errors (e.g. 403 for non-admins)", () => {
@@ -95,13 +103,14 @@ describe("CostHealthMeter", () => {
     expect(screen.getByText("Needs Attention")).toBeInTheDocument();
   });
 
-  it("renders all four dimension rows with their links", () => {
+  it("renders all four dimension rows with their links when expanded", async () => {
     mockUseCostHealth.mockReturnValue({
       data: makeHealthData(100),
       isLoading: false,
       isError: false,
     });
     render(<CostHealthMeter />);
+    await expand();
 
     expect(screen.getByText("Spending Limits")).toBeInTheDocument();
     expect(screen.getByText("Optimization Rules")).toBeInTheDocument();
@@ -124,7 +133,7 @@ describe("CostHealthMeter", () => {
     );
   });
 
-  it("maps dimension severity to user-visible labels", () => {
+  it("maps dimension severity to user-visible labels when expanded", async () => {
     mockUseCostHealth.mockReturnValue({
       data: makeHealthData(50, {
         limits: makeDimension({ severity: "high", link: "/llm/limits" }),
@@ -142,6 +151,7 @@ describe("CostHealthMeter", () => {
       isError: false,
     });
     render(<CostHealthMeter />);
+    await expand();
 
     expect(screen.getByText("Action needed")).toBeInTheDocument();
     expect(screen.getByText("Attention")).toBeInTheDocument();
@@ -149,7 +159,7 @@ describe("CostHealthMeter", () => {
     expect(screen.getAllByText("Healthy").length).toBeGreaterThanOrEqual(2);
   });
 
-  it("renders dimension messages from the API", () => {
+  it("renders dimension messages from the API when expanded", async () => {
     mockUseCostHealth.mockReturnValue({
       data: makeHealthData(50, {
         limits: makeDimension({
@@ -162,8 +172,67 @@ describe("CostHealthMeter", () => {
       isError: false,
     });
     render(<CostHealthMeter />);
+    await expand();
+
     expect(
       screen.getByText("No spending limits configured"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps dimension rows hidden by default", () => {
+    mockUseCostHealth.mockReturnValue({
+      data: makeHealthData(100),
+      isLoading: false,
+      isError: false,
+    });
+    render(<CostHealthMeter />);
+    expect(screen.queryByText("Spending Limits")).not.toBeInTheDocument();
+  });
+
+  it("restores the expanded state from localStorage", () => {
+    localStorage.setItem("archestra.cost-health-meter.open", "true");
+    mockUseCostHealth.mockReturnValue({
+      data: makeHealthData(100),
+      isLoading: false,
+      isError: false,
+    });
+    render(<CostHealthMeter />);
+    expect(screen.getByText("Spending Limits")).toBeInTheDocument();
+  });
+
+  it("persists the open state when toggled", async () => {
+    mockUseCostHealth.mockReturnValue({
+      data: makeHealthData(100),
+      isLoading: false,
+      isError: false,
+    });
+    render(<CostHealthMeter />);
+    await expand();
+    expect(localStorage.getItem("archestra.cost-health-meter.open")).toBe(
+      "true",
+    );
+  });
+
+  it("renders a count summary of dimension severities", () => {
+    mockUseCostHealth.mockReturnValue({
+      data: makeHealthData(50, {
+        limits: makeDimension({ severity: "high", link: "/llm/limits" }),
+        optimizationRules: makeDimension({
+          severity: "moderate",
+          link: "/llm/optimization-rules",
+        }),
+        compression: makeDimension({
+          severity: "low",
+          link: "/settings/llm",
+        }),
+        toolHygiene: makeDimension({ severity: "low", link: "/agents" }),
+      }),
+      isLoading: false,
+      isError: false,
+    });
+    render(<CostHealthMeter />);
+    expect(
+      screen.getByText("1 alert, 1 attention, 2 healthy"),
     ).toBeInTheDocument();
   });
 });
