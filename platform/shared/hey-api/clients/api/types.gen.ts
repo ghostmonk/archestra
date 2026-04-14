@@ -38355,6 +38355,109 @@ export type GetCostSavingsStatisticsResponses = {
 
 export type GetCostSavingsStatisticsResponse = GetCostSavingsStatisticsResponses[keyof GetCostSavingsStatisticsResponses];
 
+export type GetCostHealthData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/statistics/cost-health';
+};
+
+export type GetCostHealthErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetCostHealthError = GetCostHealthErrors[keyof GetCostHealthErrors];
+
+export type GetCostHealthResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        score: number;
+        dimensions: {
+            limits: {
+                score: number;
+                severity: 'low' | 'moderate' | 'high';
+                message: string;
+                link: string;
+            };
+            optimizationRules: {
+                score: number;
+                severity: 'low' | 'moderate' | 'high';
+                message: string;
+                link: string;
+            };
+            compression: {
+                score: number;
+                severity: 'low' | 'moderate' | 'high';
+                message: string;
+                link: string;
+            };
+            toolHygiene: {
+                score: number;
+                severity: 'low' | 'moderate' | 'high';
+                message: string;
+                link: string;
+            };
+        };
+    };
+};
+
+export type GetCostHealthResponse = GetCostHealthResponses[keyof GetCostHealthResponses];
+
 export type GetTeamsData = {
     body?: never;
     path?: never;

@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { useSetCostsAction } from "@/app/llm/(costs)/layout";
+import { CostHealthMeter } from "@/components/cost-health-meter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -503,6 +504,7 @@ export default function StatisticsPage() {
 
   return (
     <div className="space-y-6">
+      <CostHealthMeter />
       <CustomDateTimeRangeDialog
         open={isCustomDialogOpen}
         onOpenChange={setIsCustomDialogOpen}

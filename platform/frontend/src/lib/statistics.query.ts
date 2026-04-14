@@ -13,6 +13,7 @@ const {
   getModelStatistics,
   getOverviewStatistics,
   getCostSavingsStatistics,
+  getCostHealth,
 } = archestraApiSdk;
 
 export function useTeamStatistics({
@@ -112,5 +113,16 @@ export function useCostSavingsStatistics({
     },
     initialData,
     refetchInterval: 30_000, // Refresh every 30 seconds
+  });
+}
+
+export function useCostHealth() {
+  return useQuery({
+    queryKey: ["statistics", "cost-health"],
+    queryFn: async () => {
+      const response = await getCostHealth();
+      return response.data;
+    },
+    refetchInterval: 60_000, // cost health is based on admin configuration and unlikely to change very often
   });
 }
